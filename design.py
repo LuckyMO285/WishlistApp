@@ -14,27 +14,31 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(934, 797)
+        MainWindow.resize(1436, 886)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(130, 180, 671, 491))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayoutWidget.setVisible(False)
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label.setMinimumSize(QtCore.QSize(0, 13))
-        self.label.setText("")
-        self.label.setObjectName("label")
-        self.verticalLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter)
-        self.tableView = QtWidgets.QTableView(self.verticalLayoutWidget)
-        self.tableView.setObjectName("tableView")
-        self.verticalLayout.addWidget(self.tableView)
+        self.gridWidget = QtWidgets.QWidget(self.centralwidget)
+        self.gridWidget.setGeometry(QtCore.QRect(40, 20, 781, 591))
+        self.gridWidget.setObjectName("gridWidget")
+        self.gridWidget.setVisible(False)
+        self.gridLayout = QtWidgets.QGridLayout(self.gridWidget)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout.setObjectName("gridLayout")
+        self.tableWidget = QtWidgets.QTableWidget(self.gridWidget)
+        self.tableWidget.setRowCount(1)
+        self.tableWidget.setColumnCount(4)
+        self.tableWidget.setObjectName("tableWidget")
+        self.gridLayout.addWidget(self.tableWidget, 1, 2, 1, 1)
+        self.wishlist_Title = QtWidgets.QLabel(self.gridWidget)
+        self.wishlist_Title.setText("")
+        self.wishlist_Title.setObjectName("wishlist_Title")
+        self.gridLayout.addWidget(self.wishlist_Title, 0, 2, 1, 1)
+        self.add_pushButton = QtWidgets.QPushButton(self.gridWidget)
+        self.add_pushButton.setObjectName("add_pushButton")
+        self.gridLayout.addWidget(self.add_pushButton, 1, 3, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 934, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1436, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -53,14 +57,23 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def activateTable(self, MainWindow):
-        self.verticalLayoutWidget.setVisible(True)
+        self.gridWidget.setVisible(True)
 
     def setTextToWishlistTable(self, MainWindow, w_title):
-        self.label.setText(w_title)
+        self.wishlist_Title.setText(w_title)
+
+    def printToTable(self, MainWindow, result):
+        self.tableWidget.setRowCount(0)
+        for row_number, row_data in enumerate(result):
+            self.tableWidget.insertRow(row_number)
+            for column_number, data in enumerate(row_data):
+                print(data)
+                self.tableWidget.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(str(data)))
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.add_pushButton.setText(_translate("MainWindow", "Add..."))
         self.menuFile.setTitle(_translate("MainWindow", "&File"))
         self.action_Create.setText(_translate("MainWindow", "Create new wishlist..."))
         self.actionCreate_new_wishlist.setText(_translate("MainWindow", "Create new wishlist..."))
