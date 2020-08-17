@@ -66,8 +66,11 @@ class Ui_MainWindow(object):
         self.actionCreate_new_wishlist.setObjectName("actionCreate_new_wishlist")
         self.action_Load = QtWidgets.QAction(MainWindow)
         self.action_Load.setObjectName("action_Load")
+        self.action_Delete_wishlist = QtWidgets.QAction(MainWindow)
+        self.action_Delete_wishlist.setObjectName("action_Delete_wishlist")
         self.menuFile.addAction(self.action_Create)
         self.menuFile.addAction(self.action_Load)
+        self.menuFile.addAction(self.action_Delete_wishlist)
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -75,6 +78,9 @@ class Ui_MainWindow(object):
 
     def activateTable(self, MainWindow):
         self.gridWidget.setVisible(True)
+
+    def checkVisible(self, MainWindow):
+        return self.gridWidget.isVisible()
 
     def setTextToWishlistTable(self, MainWindow, w_title):
         self.wishlist_Title.setText(w_title)
@@ -85,7 +91,7 @@ class Ui_MainWindow(object):
             self.tableWidget.insertRow(row_number)
             for column_number, data in enumerate(row_data):
                 self.tableWidget.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(str(data)))
-
+                
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -96,3 +102,4 @@ class Ui_MainWindow(object):
         self.action_Create.setText(_translate("MainWindow", "Create new wishlist..."))
         self.actionCreate_new_wishlist.setText(_translate("MainWindow", "Create new wishlist..."))
         self.action_Load.setText(_translate("MainWindow", "Load wishlist..."))
+        self.action_Delete_wishlist.setText(_translate("MainWindow", "Delete wishlist..."))

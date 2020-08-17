@@ -8,12 +8,13 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
     
-        self.db = mdb.connect('localhost', 'root', 'MySQLPassword1')
+        self.db = mdb.connect('localhost', user, password)
         self.cur = self.db.cursor()
         self.cur.execute("CREATE DATABASE IF NOT EXISTS wishapp;")
         self.cur.execute("USE wishapp;")
         self.cur.execute("CREATE TABLE IF NOT EXISTS Wishlists (wishlist_id INT PRIMARY KEY AUTO_INCREMENT, wishlist_name TEXT);")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS Wishes (wish_id INT PRIMARY KEY AUTO_INCREMENT, wishlists_id INT, name TEXT, cost FLOAT, link TEXT, notes TEXT, FOREIGN KEY (wishlists_id) REFERENCES wishlists (wishlist_id));")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS Wishes (wish_id INT PRIMARY KEY AUTO_INCREMENT, wishlists_id INT, name TEXT, cost FLOAT, link TEXT, notes TEXT, FOREIGN KEY (wishlists_id) REFERENCES wishlists (wishlist_id) \
+                         ON DELETE CASCADE ON UPDATE CASCADE);")
         self.cur.execute("USE wishapp;")
 
         self.current_wishlist_ID = -1
@@ -22,6 +23,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.action_Create.triggered.connect(self.create_new_wishlist_func)
         self.action_Load.triggered.connect(self.load_block)
+        self.action_Delete_wishlist.triggered.connect(self.delete_wishlist_block)
 
         self.add_pushButton.clicked.connect(self.add_block)
         self.edit_pushButton.clicked.connect(self.edit_block)
@@ -47,12 +49,53 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
                 self.current_wishlist_ID = (self.cur.lastrowid)
                 self.db.commit()
-
-                self.activateTable(self)
-                self.setTextToWishlistTable(self, text)
+            
+                if not self.checkVisible(self):
+                    self.activateTable(self)
+                    self.setTextToWishlistTable(self, text)
+                else:
+                    self.tableWidget.setRowCount(0)
+                    self.setTextToWishlistTable(self, text)
 
     def wishlist_ok_func(self):
         self.wishlist_dialog.done(1)
+
+    def delete_wishlist_block(self):
+
+        select_query = "SELECT wishlist_name FROM wishapp.Wishlists;"
+        self.cur.execute(select_query)
+        result = list(self.cur.fetchall())
+        flatten_result = [item for sublist in result for item in sublist]
+        
+        if not flatten_result:
+            self.error_dialog = QtWidgets.QMessageBox()
+            self.error_dialog.setText("No wishlists.")
+            self.error_dialog.exec()
+        else:
+            self.dialog = LoadDialog(flatten_result)
+            self.dialog.clicked_ok.connect(self.delete_wishlist_block_ok_func)
+            self.dialog.clicked_cancel.connect(self.cancel_func)
+            self.dialog.exec()
+
+    def delete_wishlist_block_ok_func(self):
+        wl_name = str(self.dialog.combo.currentText())
+        
+        id_query = "SELECT wishlist_id FROM wishapp.Wishlists WHERE wishlist_name='%s';" % wl_name
+        self.cur.execute(id_query)
+        self.current_wishlist_ID = self.cur.fetchone()[0]
+        
+        query = "DELETE FROM wishapp.Wishlists WHERE wishlist_id=%s;" % (self.current_wishlist_ID)
+        self.cur.execute(query)
+        self.db.commit()
+
+        self.error_dialog = QtWidgets.QMessageBox()
+        self.error_dialog.setText("Wishlist deleted.")
+        self.error_dialog.exec()
+
+        self.tableWidget.setRowCount(0)
+        self.setTextToWishlistTable(self, '')
+        self.current_wishlist_ID = -1
+        self.cancel_func()
 
     def add_block(self):
         self.dialog = AddDialog()
@@ -65,13 +108,15 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         cur_cost = self.dialog.costLineEdit.text()
         cur_link = self.dialog.linkLineEdit.text()
         cur_notes = self.dialog.notesLineEdit.text()
-
+        positive_flag = False
+        
         try:
             cur_cost = float(cur_cost)
+            positive_flag = True if (cur_cost > 0) else False
         except ValueError:
             pass
         
-        if cur_name and cur_link and cur_notes and isinstance(cur_cost, float) :
+        if cur_name and cur_link and cur_notes and isinstance(cur_cost, float) and positive_flag:
             query = "INSERT INTO wishapp.Wishes (wishlists_id, name, cost, link, notes) VALUES (%s, '%s', %s, '%s', '%s');" % (self.current_wishlist_ID, cur_name, cur_cost, cur_link, cur_notes)
             self.cur.execute(query)
             self.db.commit()
@@ -82,6 +127,10 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.printToTable(self, result)
 
             self.cancel_func()
+        else:
+            self.error_dialog = QtWidgets.QMessageBox()
+            self.error_dialog.setText("Check input parameters:\n 1. Cost must be a positive number.\n 2. All fields must be filled.")
+            self.error_dialog.exec()
 
     def load_block(self):
 
@@ -102,7 +151,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     def load_block_ok_func(self):
         wl_name = str(self.dialog.combo.currentText())
-
+        
         id_query = "SELECT wishlist_id FROM wishapp.Wishlists WHERE wishlist_name='%s';" % wl_name
         self.cur.execute(id_query)
         self.current_wishlist_ID = self.cur.fetchone()[0]
@@ -112,6 +161,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         result = list(self.cur.fetchall())
 
         self.activateTable(self)
+        self.setTextToWishlistTable(self, wl_name)
         self.printToTable(self, result)
         self.cancel_func()
 
@@ -153,16 +203,19 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.printToTable(self, result)
 
             self.cancel_func()
+        else:
+            self.error_dialog = QtWidgets.QMessageBox()
+            self.error_dialog.setText("Cost must be a number.")
+            self.error_dialog.exec()
 
     def delete_block(self):
 
         row = self.tableWidget.currentItem().row()
         self.row_id = self.tableWidget.item(row, 0).text()
         
-        self.dialog = QtWidgets.QMessageBox()
-        self.dialog.setText("Are you sure you want to delete that row?")
-        self.dialog.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
-        self.dialog.buttonClicked.connect(self.delete_block_ok_func)
+        self.dialog = DeleteDialog()
+        self.dialog.clicked_ok.connect(self.delete_block_ok_func)
+        self.dialog.clicked_cancel.connect(self.cancel_func)
         self.dialog.exec()
 
     def delete_block_ok_func(self):
@@ -280,6 +333,25 @@ class EditDialog(QtWidgets.QDialog):
         lay.addWidget(self.notesLineEdit, *(3, 1))
 
         lay.addWidget(self.edit_buttonBox, 4, 0, 1, 2, QtCore.Qt.AlignHCenter)
+
+class DeleteDialog(QtWidgets.QDialog):
+    clicked_ok = QtCore.pyqtSignal()
+    clicked_cancel = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(400, 200)
+        self.questionLabel = QtWidgets.QLabel("Are you sure you want to delete that row?")
+
+        self.delete_buttonBox = QtWidgets.QDialogButtonBox()
+        self.delete_buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        
+        self.delete_buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.clicked_ok)
+        self.delete_buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(self.clicked_cancel)
+
+        lay = QtWidgets.QGridLayout(self)
+        lay.addWidget(self.questionLabel, *(0, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        lay.addWidget(self.delete_buttonBox, *(1, 0), QtCore.Qt.AlignHCenter)
 
 
 def main():

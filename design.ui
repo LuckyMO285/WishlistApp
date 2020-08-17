@@ -96,6 +96,7 @@
     </property>
     <addaction name="action_Create"/>
     <addaction name="action_Load"/>
+    <addaction name="action_Delete_wishlist"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -113,6 +114,11 @@
   <action name="action_Load">
    <property name="text">
     <string>Load wishlist...</string>
+   </property>
+  </action>
+  <action name="action_Delete_wishlist">
+   <property name="text">
+    <string>Delete wishlist...</string>
    </property>
   </action>
  </widget>
