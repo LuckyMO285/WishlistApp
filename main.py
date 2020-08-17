@@ -8,7 +8,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
     
-        self.db = mdb.connect('localhost', user, password)
+        self.db = mdb.connect('localhost', 'root', 'MySQLPassword1')
         self.cur = self.db.cursor()
         self.cur.execute("CREATE DATABASE IF NOT EXISTS wishapp;")
         self.cur.execute("USE wishapp;")
@@ -25,6 +25,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.add_pushButton.clicked.connect(self.add_block)
         self.edit_pushButton.clicked.connect(self.edit_block)
+        self.delete_pushButton.clicked.connect(self.delete_block)
 
     def create_new_wishlist_func(self):
 
@@ -143,7 +144,6 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         
         if cur_name and cur_link and cur_notes and isinstance(cur_cost, float) :
             query = "UPDATE wishapp.Wishes SET name='%s', cost=%s, link='%s', notes='%s' WHERE wish_id=%s;" % (cur_name, cur_cost, cur_link, cur_notes, self.row_id)
-            print(query)
             self.cur.execute(query)
             self.db.commit()
 
@@ -154,9 +154,29 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
             self.cancel_func()
 
-        #query = "UPDATE wishapp.Wishes SET cost=11 WHERE wish_id=1;"
-        
+    def delete_block(self):
 
+        row = self.tableWidget.currentItem().row()
+        self.row_id = self.tableWidget.item(row, 0).text()
+        
+        self.dialog = QtWidgets.QMessageBox()
+        self.dialog.setText("Are you sure you want to delete that row?")
+        self.dialog.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        self.dialog.buttonClicked.connect(self.delete_block_ok_func)
+        self.dialog.exec()
+
+    def delete_block_ok_func(self):
+        query = "DELETE FROM wishapp.Wishes WHERE wish_id=%s;" % (self.row_id)
+        self.cur.execute(query)
+        self.db.commit()
+
+        select_query = "SELECT wish_id, name, cost, link, notes FROM wishapp.wishes WHERE wishlists_id = %s;" % self.current_wishlist_ID
+        self.cur.execute(select_query)
+        result = self.cur.fetchall()
+        self.printToTable(self, result)
+
+        self.cancel_func()
+        
     def cancel_func(self):
         self.dialog.done(1)
 
