@@ -8,7 +8,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
     
-        self.db = mdb.connect('localhost', user, password)
+        self.db = mdb.connect('localhost', 'root', 'MySQLPassword1')
         self.cur = self.db.cursor()
         self.cur.execute("CREATE DATABASE IF NOT EXISTS wishapp;")
         self.cur.execute("USE wishapp;")
@@ -19,9 +19,11 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.current_wishlist_ID = -1
         
         self.setupUi(self)
-        self.menubar.triggered[QtWidgets.QAction].connect(self.create_new_wishlist_func)
 
-        self.add_pushButton.clicked.connect(self.add_values)
+        self.action_Create.triggered.connect(self.create_new_wishlist_func)
+        self.action_Load.triggered.connect(self.load_block)
+
+        self.add_pushButton.clicked.connect(self.add_block)
 
     def create_new_wishlist_func(self):
 
@@ -32,9 +34,9 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         wishlist_name_unique = self.cur.fetchone()[0] # 1 - if already in db, 0 - if not
         
         if wishlist_name_unique:
-            self.wishlist_dialog = AlreadyExistingWishlistDialog()
-            self.wishlist_dialog.clicked.connect(self.wishlist_ok_func)
-            self.wishlist_dialog.exec()
+            self.error_dialog = QtWidgets.QMessageBox()
+            self.error_dialog.setText("Wishlist already existing.")
+            self.error_dialog.exec()
         else:       
             if ok:
                 query = "INSERT INTO wishapp.Wishlists (wishlist_name) VALUES ('%s');" % text
@@ -47,13 +49,16 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 self.activateTable(self)
                 self.setTextToWishlistTable(self, text)
 
-    def add_values(self):
+    def wishlist_ok_func(self):
+        self.wishlist_dialog.done(1)
+
+    def add_block(self):
         self.dialog = AddDialog()
-        self.dialog.clicked_ok.connect(self.ok_func)
+        self.dialog.clicked_ok.connect(self.add_block_ok_func)
         self.dialog.clicked_cancel.connect(self.cancel_func)
         self.dialog.exec()
 
-    def ok_func(self):
+    def add_block_ok_func(self):
         cur_name = self.dialog.nameLineEdit.text()
         cur_cost = self.dialog.costLineEdit.text()
         cur_link = self.dialog.linkLineEdit.text()
@@ -76,26 +81,41 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
             self.cancel_func()
 
-    def wishlist_ok_func(self):
-        self.wishlist_dialog.done(1)
+    def load_block(self):
+
+        select_query = "SELECT wishlist_name FROM wishapp.Wishlists;"
+        self.cur.execute(select_query)
+        result = list(self.cur.fetchall())
+        flatten_result = [item for sublist in result for item in sublist]
+        
+        if not flatten_result:
+            self.error_dialog = QtWidgets.QMessageBox()
+            self.error_dialog.setText("No wishlists.")
+            self.error_dialog.exec()
+        else:
+            self.dialog = LoadDialog(flatten_result)
+            self.dialog.clicked_ok.connect(self.load_block_ok_func)
+            self.dialog.clicked_cancel.connect(self.cancel_func)
+            self.dialog.exec()
+
+    def load_block_ok_func(self):
+        wl_name = str(self.dialog.combo.currentText())
+
+        id_query = "SELECT wishlist_id FROM wishapp.Wishlists WHERE wishlist_name='%s';" % wl_name
+        self.cur.execute(id_query)
+        self.current_wishlist_ID = self.cur.fetchone()[0]
+        
+        select_query = "SELECT name, cost, link, notes FROM wishapp.Wishes WHERE wishlists_id=%s;" % self.current_wishlist_ID
+        self.cur.execute(select_query)
+        result = list(self.cur.fetchall())
+
+        self.activateTable(self)
+        self.printToTable(self, result)
+        self.cancel_func()
+        
 
     def cancel_func(self):
         self.dialog.done(1)
-
-class AlreadyExistingWishlistDialog(QtWidgets.QDialog):
-    clicked = QtCore.pyqtSignal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(400, 200)
-        self.messageLabel = QtWidgets.QLabel("Wishlist already existing")
-        
-        self.okButton = QtWidgets.QPushButton("OK")
-        self.okButton.clicked.connect(self.clicked)
-
-        lay = QtWidgets.QGridLayout(self)
-        lay.addWidget(self.messageLabel, *(0, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-        lay.addWidget(self.okButton, *(1, 0), QtCore.Qt.AlignHCenter)
 
 class AddDialog(QtWidgets.QDialog):
     clicked_ok = QtCore.pyqtSignal()
@@ -132,6 +152,31 @@ class AddDialog(QtWidgets.QDialog):
         lay.addWidget(self.notesLineEdit, *(3, 1))
 
         lay.addWidget(self.add_buttonBox, 4, 0, 1, 2, QtCore.Qt.AlignHCenter)
+
+class LoadDialog(QtWidgets.QDialog):
+    clicked_ok = QtCore.pyqtSignal()
+    clicked_cancel = QtCore.pyqtSignal()
+
+    def __init__(self, wishlists_names, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(400, 200)
+        self.nameLabel = QtWidgets.QLabel("Wishlist_name")
+
+        self.combo = QtWidgets.QComboBox(self)
+        self.combo.addItems(wishlists_names)
+
+        self.load_buttonBox = QtWidgets.QDialogButtonBox()
+        self.load_buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        
+        self.load_buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.clicked_ok)
+        self.load_buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(self.clicked_cancel)
+
+        lay = QtWidgets.QGridLayout(self)
+        lay.addWidget(self.nameLabel, *(0, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        lay.addWidget(self.combo, *(0, 1), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+
+        lay.addWidget(self.load_buttonBox, 1, 0, 1, 2, QtCore.Qt.AlignHCenter)
+
 
 def main():
     

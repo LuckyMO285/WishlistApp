@@ -14,43 +14,67 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="gridWidget" native="true">
+   <widget class="QWidget" name="horizontalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>20</y>
-      <width>781</width>
-      <height>591</height>
+      <x>10</x>
+      <y>10</y>
+      <width>551</width>
+      <height>521</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="1" column="2">
-      <widget class="QTableWidget" name="tableWidget">
-       <property name="rowCount">
-        <number>1</number>
-       </property>
-       <property name="columnCount">
-        <number>4</number>
-       </property>
-       <row/>
-       <column/>
-       <column/>
-       <column/>
-       <column/>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QLabel" name="wishlist_Title">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="3">
-      <widget class="QPushButton" name="add_pushButton">
-       <property name="text">
-        <string>Add...</string>
-       </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QWidget" name="gridWidget" native="true">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="2">
+         <widget class="QTableWidget" name="tableWidget">
+          <property name="rowCount">
+           <number>1</number>
+          </property>
+          <property name="columnCount">
+           <number>4</number>
+          </property>
+          <row/>
+          <column/>
+          <column/>
+          <column/>
+          <column/>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="wishlist_Title">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QPushButton" name="add_pushButton">
+            <property name="text">
+             <string>Add...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="edit_pushButton_2">
+            <property name="text">
+             <string>Edit...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="delete_pushButton_3">
+            <property name="text">
+             <string>Delete...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
@@ -70,6 +94,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Create"/>
+    <addaction name="action_Load"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -82,6 +107,11 @@
   <action name="actionCreate_new_wishlist">
    <property name="text">
     <string>Create new wishlist...</string>
+   </property>
+  </action>
+  <action name="action_Load">
+   <property name="text">
+    <string>Load wishlist...</string>
    </property>
   </action>
  </widget>
