@@ -8,7 +8,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def __init__(self):
         super().__init__()
     
-        self.db = mdb.connect('localhost', 'root', 'MySQLPassword1')
+        self.db = mdb.connect('localhost', user, password)
         self.cur = self.db.cursor()
         self.cur.execute("CREATE DATABASE IF NOT EXISTS wishapp;")
         self.cur.execute("USE wishapp;")
@@ -24,6 +24,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.action_Load.triggered.connect(self.load_block)
 
         self.add_pushButton.clicked.connect(self.add_block)
+        self.edit_pushButton.clicked.connect(self.edit_block)
 
     def create_new_wishlist_func(self):
 
@@ -74,7 +75,7 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.cur.execute(query)
             self.db.commit()
 
-            select_query = "SELECT name, cost, link, notes FROM wishapp.wishes WHERE wishlists_id = %s;" % self.current_wishlist_ID
+            select_query = "SELECT wish_id, name, cost, link, notes FROM wishapp.wishes WHERE wishlists_id = %s;" % self.current_wishlist_ID
             self.cur.execute(select_query)
             result = self.cur.fetchall()
             self.printToTable(self, result)
@@ -105,13 +106,55 @@ class ExampleApp(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.cur.execute(id_query)
         self.current_wishlist_ID = self.cur.fetchone()[0]
         
-        select_query = "SELECT name, cost, link, notes FROM wishapp.Wishes WHERE wishlists_id=%s;" % self.current_wishlist_ID
+        select_query = "SELECT wish_id, name, cost, link, notes FROM wishapp.Wishes WHERE wishlists_id=%s;" % self.current_wishlist_ID
         self.cur.execute(select_query)
         result = list(self.cur.fetchall())
 
         self.activateTable(self)
         self.printToTable(self, result)
         self.cancel_func()
+
+    def edit_block(self):
+
+        row = self.tableWidget.currentItem().row()
+
+        self.row_id = self.tableWidget.item(row, 0).text()
+        orig_name = self.tableWidget.item(row, 1).text()
+        orig_cost = self.tableWidget.item(row, 2).text()
+        orig_link = self.tableWidget.item(row, 3).text()
+        orig_notes = self.tableWidget.item(row, 4).text()
+        
+        self.dialog = EditDialog(orig_name, orig_cost, orig_link, orig_notes)
+        self.dialog.clicked_ok.connect(self.edit_block_ok_func)
+        self.dialog.clicked_cancel.connect(self.cancel_func)
+        self.dialog.exec()
+
+    def edit_block_ok_func(self):
+        
+        cur_name = self.dialog.nameLineEdit.text()
+        cur_cost = self.dialog.costLineEdit.text()
+        cur_link = self.dialog.linkLineEdit.text()
+        cur_notes = self.dialog.notesLineEdit.text()
+
+        try:
+            cur_cost = float(cur_cost)
+        except ValueError:
+            pass
+        
+        if cur_name and cur_link and cur_notes and isinstance(cur_cost, float) :
+            query = "UPDATE wishapp.Wishes SET name='%s', cost=%s, link='%s', notes='%s' WHERE wish_id=%s;" % (cur_name, cur_cost, cur_link, cur_notes, self.row_id)
+            print(query)
+            self.cur.execute(query)
+            self.db.commit()
+
+            select_query = "SELECT wish_id, name, cost, link, notes FROM wishapp.wishes WHERE wishlists_id = %s;" % self.current_wishlist_ID
+            self.cur.execute(select_query)
+            result = self.cur.fetchall()
+            self.printToTable(self, result)
+
+            self.cancel_func()
+
+        #query = "UPDATE wishapp.Wishes SET cost=11 WHERE wish_id=1;"
         
 
     def cancel_func(self):
@@ -176,6 +219,47 @@ class LoadDialog(QtWidgets.QDialog):
         lay.addWidget(self.combo, *(0, 1), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
 
         lay.addWidget(self.load_buttonBox, 1, 0, 1, 2, QtCore.Qt.AlignHCenter)
+
+class EditDialog(QtWidgets.QDialog):
+    clicked_ok = QtCore.pyqtSignal()
+    clicked_cancel = QtCore.pyqtSignal()
+
+    def __init__(self, c_name, c_cost, c_link, c_notes, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(400, 200)
+        self.nameLabel = QtWidgets.QLabel("Name")
+        self.costLabel = QtWidgets.QLabel("Cost")
+        self.linkLabel = QtWidgets.QLabel("Link")
+        self.notesLabel = QtWidgets.QLabel("Notes")
+
+        self.nameLineEdit = QtWidgets.QLineEdit()
+        self.costLineEdit = QtWidgets.QLineEdit()
+        self.linkLineEdit = QtWidgets.QLineEdit()
+        self.notesLineEdit = QtWidgets.QLineEdit()
+
+        self.nameLineEdit.setText(c_name)
+        self.costLineEdit.setText(c_cost)
+        self.linkLineEdit.setText(c_link)
+        self.notesLineEdit.setText(c_notes)
+
+        self.edit_buttonBox = QtWidgets.QDialogButtonBox()
+        self.edit_buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        
+        self.edit_buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.clicked_ok)
+        self.edit_buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(self.clicked_cancel)
+
+        lay = QtWidgets.QGridLayout(self)
+        lay.addWidget(self.nameLabel, *(0, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        lay.addWidget(self.costLabel, *(1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        lay.addWidget(self.linkLabel, *(2, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        lay.addWidget(self.notesLabel, *(3, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        
+        lay.addWidget(self.nameLineEdit, *(0, 1))
+        lay.addWidget(self.costLineEdit, *(1, 1))
+        lay.addWidget(self.linkLineEdit, *(2, 1))
+        lay.addWidget(self.notesLineEdit, *(3, 1))
+
+        lay.addWidget(self.edit_buttonBox, 4, 0, 1, 2, QtCore.Qt.AlignHCenter)
 
 
 def main():

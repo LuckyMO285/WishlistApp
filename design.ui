@@ -19,11 +19,11 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>551</width>
+      <width>621</width>
       <height>521</height>
      </rect>
     </property>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QWidget" name="gridWidget" native="true">
        <layout class="QGridLayout" name="gridLayout">
@@ -33,9 +33,10 @@
            <number>1</number>
           </property>
           <property name="columnCount">
-           <number>4</number>
+           <number>5</number>
           </property>
           <row/>
+          <column/>
           <column/>
           <column/>
           <column/>
@@ -59,14 +60,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="edit_pushButton_2">
+           <widget class="QPushButton" name="edit_pushButton">
             <property name="text">
              <string>Edit...</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="delete_pushButton_3">
+           <widget class="QPushButton" name="delete_pushButton">
             <property name="text">
              <string>Delete...</string>
             </property>
